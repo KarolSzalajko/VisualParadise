@@ -24,11 +24,18 @@ namespace Assets.Scripts.Canvas
       contextMenu.SetActive(false);
     }
 
+    public void Update()
+    {
+      if(_node != null)
+      {
+        SetConnectionInfo(_node);
+      }
+    }
+
     public void OpenContextMenu(GameObject gameObjectHit)
     {
       var node = _graphService.FindNodeByGameObject(gameObjectHit);
       _node = node;
-      SetConnectionInfo(node);
       contextMenu.SetActive(true);
       GameService.Instance.PauseGameWithoutResume();
     }
@@ -38,7 +45,7 @@ namespace Assets.Scripts.Canvas
       if (_tcpListenerService.NodeHasListener(node))
       {
         _tcpListenerNode = _tcpListenerService.FindListener(node);
-        Ip.text = _tcpListenerNode.Ip;
+        Ip.text = $"{_tcpListenerNode.Ip}:{_tcpListenerNode.Port}";
         ConnectButtonText.text = "Disconnect";
         _connectButtonAction = Disconnect;
       }

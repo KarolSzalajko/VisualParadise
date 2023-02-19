@@ -10,14 +10,6 @@ namespace Assets.Scripts
     private const int _defaultPort = 5000;
     private List<TcpListenerNode> _listeners = new List<TcpListenerNode>();
 
-    public void Update()
-    {
-      foreach (var listener in _listeners)
-      {
-        listener.UpdateOnData();
-      }
-    }
-
     public void OnDestroy()
     {
       foreach (var listener in _listeners)
@@ -26,7 +18,7 @@ namespace Assets.Scripts
       }
     }
 
-    public TcpListenerNode StartListener(Node node)
+    public void StartListener(Node node)
     {
       var port = _listeners
         .Select(l => l.Port)
@@ -34,8 +26,6 @@ namespace Assets.Scripts
         .Max() + 1;
       var listener = new TcpListenerNode(port, node);
       _listeners.Add(listener);
-
-      return listener;
     }
 
     public void StopListener(Node node)
