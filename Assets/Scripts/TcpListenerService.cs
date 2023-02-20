@@ -7,7 +7,8 @@ namespace Assets.Scripts
 {
   public class TcpListenerService : MonoBehaviour
   {
-    private const int _defaultPort = 5000;
+    public const string IP = "192.168.2.110";
+    private const int _defaultPort = 8000;
     private List<TcpListenerNode> _listeners = new List<TcpListenerNode>();
 
     public void OnDestroy()

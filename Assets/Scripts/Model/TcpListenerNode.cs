@@ -14,7 +14,7 @@ namespace Assets.Scripts.Model
     public readonly Node Node;
     private TcpListener _listener;
     private Thread _tcpListenerThread;
-    private bool isRunning = false;
+    private bool _isRunning = false;
 
     public TcpListenerNode(int port, Node node)
     {
@@ -29,32 +29,33 @@ namespace Assets.Scripts.Model
     {
       try
       {
-        isRunning = true;
-        _listener = new TcpListener(IPAddress.Parse("192.168.2.110"), Port);
+        _isRunning = true;
+        _listener = new TcpListener(IPAddress.Parse(TcpListenerService.IP), Port);
         _listener.Start();
         Ip = ((IPEndPoint)_listener.LocalEndpoint).Address.ToString();
         Debug.Log($"Started listening on IP address {Ip}:{Port}");
-        byte[] bytes = new byte[1024];
-        while (isRunning)
+        byte[] bytes = new byte[1024]; 
+        while (_isRunning)
         {
           using (var client = _listener.AcceptTcpClient())
           {
             using (NetworkStream stream = client.GetStream())
             {
-              int length;		
+              int length;		//TODO: this should read one message at a time, now multiple messages can be passed here
               while ((length = stream.Read(bytes, 0, bytes.Length)) != 0)
               {
                 var incommingData = new byte[length];
                 Array.Copy(bytes, 0, incommingData, 0, length);
                 string message = Encoding.ASCII.GetString(incommingData);
                 Debug.Log($"TcpListenerNode {Port} received message: {message}");
-                var acceleration = GetAcceleration(message);
 
-                Node.Acceleration = acceleration;
+                ApplyAcceleration(GetAcceleration(message));
               }
             }
           }
         }
+        _listener.Stop();
+        Debug.Log($"Stopped listening on IP address {Ip}:{Port}");
       }
       catch (SocketException socketException)
       {
@@ -64,35 +65,19 @@ namespace Assets.Scripts.Model
 
     public void OnDestroy()
     {
-      isRunning = false;
-      if (_listener != null)
-      {
-        _listener.Stop();
-      }
-      _tcpListenerThread.Join();
+      _isRunning = false;
     }
 
-    //public void UpdateOnData()
-    //{
-    //  if (_client.Available > 0)
-    //  {
-    //    NetworkStream stream = _client.GetStream();
-    //    byte[] data = new byte[_client.Available];
-    //    stream.Read(data, 0, data.Length);
-
-    //    string message = System.Text.Encoding.UTF8.GetString(data);
-    //    Debug.Log($"TcpListenerNode {Port} received message: {message}");
-
-    //    var acceleration = GetAcceleration(message);
-
-    //    Node.Acceleration = acceleration;
-    //  }
-    //}
+    private void ApplyAcceleration(Vector3 acceleration)
+    {
+      Node.Acceleration += acceleration;
+      Debug.Log("Node acceleration = " + Node.Acceleration);
+    }
 
     private Vector3 GetAcceleration(string message)
     {
       //TODO
-      return Vector3.zero;
+      return new Vector3(0.1f, 0, 0);
     }
   }
 }
