@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Assets.Scripts.Model
@@ -20,12 +21,12 @@ namespace Assets.Scripts.Model
     {
       Port = port;
       Node = node;
-      _tcpListenerThread = new Thread(new ThreadStart(ListenForIncommingData));
+      _tcpListenerThread = new Thread(new ThreadStart(ListenForIncommingDataAsync));
       _tcpListenerThread.IsBackground = true;
       _tcpListenerThread.Start();
     }
 
-    private void ListenForIncommingData()
+    private void ListenForIncommingDataAsync()
     {
       try
       {
@@ -37,25 +38,32 @@ namespace Assets.Scripts.Model
         byte[] bytes = new byte[1024]; 
         while (_isRunning)
         {
-          using (var client = _listener.AcceptTcpClient())
+          try
           {
-            using (NetworkStream stream = client.GetStream())
+            using (var client = _listener.AcceptTcpClient())
             {
-              int length;		//TODO: this should read one message at a time, now multiple messages can be passed here
-              while ((length = stream.Read(bytes, 0, bytes.Length)) != 0)
+              using (NetworkStream stream = client.GetStream())
               {
-                var incommingData = new byte[length];
-                Array.Copy(bytes, 0, incommingData, 0, length);
-                string message = Encoding.ASCII.GetString(incommingData);
-                Debug.Log($"TcpListenerNode {Port} received message: {message}");
+                int length;   //TODO: this should read one message at a time, now multiple messages can be passed here
+                while ((length = stream.Read(bytes, 0, bytes.Length)) != 0)
+                {
+                  var incommingData = new byte[length];
+                  Array.Copy(bytes, 0, incommingData, 0, length);
+                  string message = Encoding.ASCII.GetString(incommingData);
+                  //Debug.Log($"TcpListenerNode {Port} received message: {message}");
 
-                ApplyAcceleration(GetAcceleration(message));
+                  ApplyAcceleration(GetAcceleration(message));
+                }
               }
             }
           }
+          catch(SocketException se)
+          {
+            Debug.Log($"Stopped listening (with disconnect exception) on IP address {Ip}:{Port}");
+          }
         }
         _listener.Stop();
-        Debug.Log($"Stopped listening on IP address {Ip}:{Port}");
+       // Debug.Log($"Stopped listening on IP address {Ip}:{Port}");
       }
       catch (SocketException socketException)
       {
@@ -66,6 +74,7 @@ namespace Assets.Scripts.Model
     public void OnDestroy()
     {
       _isRunning = false;
+      _listener.Stop();
     }
 
     private void ApplyAcceleration(Vector3 acceleration)
