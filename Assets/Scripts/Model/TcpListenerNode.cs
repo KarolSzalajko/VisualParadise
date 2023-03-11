@@ -1,9 +1,9 @@
 ﻿using System;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
+using Assets.Scripts.Common.Extensions;
 using UnityEngine;
 
 namespace Assets.Scripts.Model
@@ -35,7 +35,8 @@ namespace Assets.Scripts.Model
         _listener.Start();
         Ip = ((IPEndPoint)_listener.LocalEndpoint).Address.ToString();
         Debug.Log($"Started listening on IP address {Ip}:{Port}");
-        byte[] bytes = new byte[1024]; 
+        byte[] bytes = new byte[96];
+        var filePath = $"sensors/test_{DateTime.Now:yyyy-MM-dd HH-mm-ss}.csv";
         while (_isRunning)
         {
           try
@@ -44,15 +45,45 @@ namespace Assets.Scripts.Model
             {
               using (NetworkStream stream = client.GetStream())
               {
-                int length;   //TODO: this should read one message at a time, now multiple messages can be passed here
-                while ((length = stream.Read(bytes, 0, bytes.Length)) != 0)
+                int length;
+                var lastMeasurementTime = DateTime.Now;
+                using (StreamWriter sw = File.CreateText(filePath))
                 {
-                  var incommingData = new byte[length];
-                  Array.Copy(bytes, 0, incommingData, 0, length);
-                  string message = Encoding.ASCII.GetString(incommingData);
-                  //Debug.Log($"TcpListenerNode {Port} received message: {message}");
+                  sw.WriteLine($"accX; accY; accZ; uaX; uaY; uaZ; gX; gY; gZ; mX; mY; mZ");
+                  while ((length = stream.Read(bytes, 0, bytes.Length)) != 0)
+                  {
+                    if (length != bytes.Length)
+                    {
+                      Debug.Log("The message was not complete. Length: " + length);
+                      continue;
+                    }
+                    var acceleration = new Vector3(
+                      x: (float)BitConverter.ToDouble(bytes, 0),
+                      y: (float)BitConverter.ToDouble(bytes, 8),
+                      z: (float)BitConverter.ToDouble(bytes, 16));
 
-                  ApplyAcceleration(GetAcceleration(message));
+                    var userAcceleration = new Vector3(
+                      x: (float)BitConverter.ToDouble(bytes, 24),
+                      y: (float)BitConverter.ToDouble(bytes, 32),
+                      z: (float)BitConverter.ToDouble(bytes, 40));
+
+                    var angularVelocity = new Vector3(
+                      x: (float)BitConverter.ToDouble(bytes, 48),
+                      y: (float)BitConverter.ToDouble(bytes, 56),
+                      z: (float)BitConverter.ToDouble(bytes, 64));
+
+                    var magnetometer = new Vector3(
+                      x: (float)BitConverter.ToDouble(bytes, 72),
+                      y: (float)BitConverter.ToDouble(bytes, 80),
+                      z: (float)BitConverter.ToDouble(bytes, 88));
+
+                    sw.WriteLine($"{acceleration.ToCsvRow()}; {userAcceleration.ToCsvRow()}; {angularVelocity.ToCsvRow()}; {magnetometer.ToCsvRow()}");
+
+                    var measurementTime = DateTime.Now;
+                    var deltaTime = lastMeasurementTime - measurementTime;
+                    ApplyMovement(AdjustAcceleration(userAcceleration), AdjustAngularVelocity(angularVelocity), (float)deltaTime.TotalSeconds);
+                    lastMeasurementTime = measurementTime;
+                  }
                 }
               }
             }
@@ -77,16 +108,38 @@ namespace Assets.Scripts.Model
       _listener.Stop();
     }
 
-    private void ApplyAcceleration(Vector3 acceleration)
+    private void ApplyMovement(Vector3 acceleration, Vector3 angularVelocity, float deltaTime)
     {
-      Node.Acceleration += acceleration;
-      Debug.Log("Node acceleration = " + Node.Acceleration);
+      Node.AngularVelocity = angularVelocity;
+      Node.Rotation += Node.AngularVelocity * deltaTime;
+
+      Node.Velocity += acceleration * deltaTime;
+      Node.Position += Node.Velocity * deltaTime;
+      //Node.Velocity *= 0.9f;
+      //Node.Velocity += acceleration / 10;
+      //Debug.Log("Node acceleration = " + Node.Acceleration);
+      //Debug.Log("Node angular acceleration = " + Node.AngularAcceleration);
     }
 
-    private Vector3 GetAcceleration(string message)
+    private Vector3 AdjustAcceleration(Vector3 acceleration)
     {
-      //TODO
-      return new Vector3(0.1f, 0, 0);
+      var minSignificantThreshold = 0.015f;
+      var adjustedX = -acceleration.x;// - 0.021f;
+      var adjustedY = -acceleration.y;// + 0.0378f;
+      var adjustedZ = acceleration.z;// - 0.165f;
+
+      return new Vector3(
+        x: Math.Abs(adjustedX) < minSignificantThreshold ? 0 : adjustedX,
+        y: Math.Abs(adjustedY) < minSignificantThreshold ? 0 : adjustedY,
+        z: Math.Abs(adjustedZ) < minSignificantThreshold ? 0 : adjustedZ);//* 0.02f;
+    }
+
+    private Vector3 AdjustAngularVelocity(Vector3 angularVelocity)
+    {
+      return new Vector3(
+        x: -angularVelocity.x,
+        y: -angularVelocity.y,
+        z: angularVelocity.z) * 57.3f;
     }
   }
 }

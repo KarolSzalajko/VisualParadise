@@ -1,0 +1,40 @@
+{
+  "Edges": [
+  ],
+  "Nodes": [
+  ],
+  "Classes": [
+    {
+      "Id": 0,
+      "name": "Direction",
+      "texturePath": ".\\data\\textures\\directions.png",
+      "shape": "Cube",
+      "scale": 2
+    },
+    {
+      "Id": 1,
+      "name": "Yellow",
+      "texturePath": ".\\data\\textures\\yellow.jpg",
+      "shape": "Cube"
+    },
+    {
+      "Id": 2,
+      "name": "YellowBig",
+      "texturePath": ".\\data\\textures\\yellow.jpg",
+      "shape": "Cube",
+      "scale": 3
+    },
+    {
+      "Id": 3,
+      "name": "green",
+      "texturePath": ".\\data\\textures\\green.jpg",
+      "shape": "Capsule"
+    },
+    {
+      "Id": 4,
+      "name": "github",
+      "texturePath": ".\\data\\textures\\github.png",
+      "shape": "Cylinder"
+    }
+  ]
+}

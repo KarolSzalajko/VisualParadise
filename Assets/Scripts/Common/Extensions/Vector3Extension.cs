@@ -14,5 +14,8 @@ namespace Assets.Scripts.Common.Extensions
       var (x, y, z) = (vector3.x, vector3.y, vector3.z);
       return (x.ToString(), y.ToString(), z.ToString());
     }
+
+    public static string ToCsvRow(this Vector3 vector3)
+      => $"{vector3.x}; {vector3.y}; {vector3.z}".Replace('.', ',');
   }
 }
