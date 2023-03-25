@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using Assets.Scripts.Model;
 using UnityEngine;
 
@@ -7,7 +9,13 @@ namespace Assets.Scripts
 {
   public class TcpListenerService : MonoBehaviour
   {
-    public const string IP = "192.168.2.110";
+    public readonly string IP;
+
+    public TcpListenerService()
+    {
+      IP = GetLocalIPv4();
+    }
+
     private const int _defaultPort = 8000;
     private List<TcpListenerNode> _listeners = new List<TcpListenerNode>();
 
@@ -47,5 +55,13 @@ namespace Assets.Scripts
     public TcpListenerNode FindListener(Node node)
       => _listeners
       .First(listener => listener.Node == node);
+
+    public string GetLocalIPv4()
+    {
+      return Dns.GetHostEntry(Dns.GetHostName())
+          .AddressList.First(
+              f => f.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+          .ToString();
+    }
   }
 }
