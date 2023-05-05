@@ -43,6 +43,7 @@ namespace Assets.Scripts
 
     void Accelerate()
     {
+      //Debug.Log(Time.deltaTime);
       foreach (var n in graphService.Graph.Nodes)
       {
         var newVelocity = n.Velocity + (n.Acceleration * Time.deltaTime);

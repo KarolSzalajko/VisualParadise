@@ -18,6 +18,26 @@ namespace Assets.Scripts
 
     private const int _defaultPort = 8000;
     private List<TcpListenerNode> _listeners = new List<TcpListenerNode>();
+    // An object used to LOCK for thread safe accesses
+    public readonly object Lock = new object();
+    // Here we will add actions from the background thread
+    // that will be "delayed" until the next Update call => Unity main thread
+    public readonly Queue<Action> MainThreadActions = new Queue<Action>();
+
+    public void FixedUpdate()
+    {
+      //Debug.Log(Time.deltaTime);
+      // Lock for thread safe access 
+      //lock (Lock)
+      //{
+        // Run all queued actions in order and remove them from the queue
+        while (MainThreadActions.Count > 0)
+        {
+          var action = MainThreadActions.Dequeue();
+          action?.Invoke();
+        }
+      //}
+    }
 
     public void OnDestroy()
     {
@@ -33,7 +53,7 @@ namespace Assets.Scripts
         .Select(l => l.Port)
         .DefaultIfEmpty(_defaultPort)
         .Max() + 1;
-      var listener = new TcpListenerNode(port, node);
+      var listener = new TcpListenerNode(port, node, this);
       _listeners.Add(listener);
     }
 

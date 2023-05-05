@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -16,11 +17,13 @@ namespace Assets.Scripts.Model
     private TcpListener _listener;
     private Thread _tcpListenerThread;
     private bool _isRunning = false;
+    private TcpListenerService _service;
 
-    public TcpListenerNode(int port, Node node)
+    public TcpListenerNode(int port, Node node, TcpListenerService service)
     {
       Port = port;
       Node = node;
+      _service = service;
       _tcpListenerThread = new Thread(new ThreadStart(ListenForIncommingDataAsync));
       _tcpListenerThread.IsBackground = true;
       _tcpListenerThread.Start();
@@ -31,7 +34,7 @@ namespace Assets.Scripts.Model
       try
       {
         _isRunning = true;
-        _listener = new TcpListener(IPAddress.Parse(TcpListenerService.IP), Port);
+        _listener = new TcpListener(IPAddress.Parse(_service.IP), Port);
         _listener.Start();
         Ip = ((IPEndPoint)_listener.LocalEndpoint).Address.ToString();
         Debug.Log($"Started listening on IP address {Ip}:{Port}");
@@ -47,6 +50,8 @@ namespace Assets.Scripts.Model
               {
                 int length;
                 var lastMeasurementTime = DateTime.Now;
+                var startDate = DateTime.Now;
+                var dataCounter = 0;
                 using (StreamWriter sw = File.CreateText(filePath))
                 {
                   sw.WriteLine($"accX; accY; accZ; uaX; uaY; uaZ; gX; gY; gZ; mX; mY; mZ");
@@ -79,10 +84,28 @@ namespace Assets.Scripts.Model
 
                     sw.WriteLine($"{acceleration.ToCsvRow()}; {userAcceleration.ToCsvRow()}; {angularVelocity.ToCsvRow()}; {magnetometer.ToCsvRow()}");
 
+                    dataCounter++;
                     var measurementTime = DateTime.Now;
-                    var deltaTime = lastMeasurementTime - measurementTime;
-                    ApplyMovement(AdjustAcceleration(userAcceleration), AdjustAngularVelocity(angularVelocity), (float)deltaTime.TotalSeconds);
+                    var deltaTime = (float)(lastMeasurementTime - measurementTime).TotalSeconds;
+                    //var deltaTotalTime = (float)(measurementTime - startDate).TotalSeconds;
                     lastMeasurementTime = measurementTime;
+
+                    //Debug.Log("Avg sample rate: " + dataCounter / deltaTotalTime);
+
+                    // Lock for thread safe access
+                    //lock (_service.Lock)
+                    //{
+                    // Add an action that requires the main thread
+                    _service.MainThreadActions.Enqueue(() =>
+                      {
+                        var newRotation = AdjustAngularVelocity(angularVelocity) * deltaTime;
+                        Node.Velocity *= 0.9f;
+                        Node.Velocity += AdjustAcceleration(userAcceleration) * deltaTime ;
+                        var newPosition = Node.Velocity * deltaTime;
+                        Node.Rotation += newRotation;
+                        Node.Position += newPosition;
+                      });
+                    //}
                   }
                 }
               }
@@ -106,19 +129,6 @@ namespace Assets.Scripts.Model
     {
       _isRunning = false;
       _listener.Stop();
-    }
-
-    private void ApplyMovement(Vector3 acceleration, Vector3 angularVelocity, float deltaTime)
-    {
-      Node.AngularVelocity = angularVelocity;
-      Node.Rotation += Node.AngularVelocity * deltaTime;
-
-      Node.Velocity += acceleration * deltaTime;
-      Node.Position += Node.Velocity * deltaTime;
-      //Node.Velocity *= 0.9f;
-      //Node.Velocity += acceleration / 10;
-      //Debug.Log("Node acceleration = " + Node.Acceleration);
-      //Debug.Log("Node angular acceleration = " + Node.AngularAcceleration);
     }
 
     private Vector3 AdjustAcceleration(Vector3 acceleration)
