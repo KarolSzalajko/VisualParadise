@@ -7,20 +7,19 @@ namespace Assets.Scripts.Canvas
 {
   public class ContextMenuHandler : MonoBehaviour
   {
-    private Node _node;
-    private TcpListenerNode _tcpListenerNode;
-
     public GameObject contextMenu;
     public Text Ip;
+    public Text Id;
     public Text ConnectButtonText;
+    private Node _node;
     private GraphService _graphService;
-    private TcpListenerService _tcpListenerService;
+    private MqttService _mqttService;
     private Action _connectButtonAction;
 
     public void Start()
     {
       _graphService = FindObjectOfType<GraphService>();
-      _tcpListenerService = FindObjectOfType<TcpListenerService>();
+      _mqttService = FindObjectOfType<MqttService>();
       contextMenu.SetActive(false);
     }
 
@@ -42,31 +41,27 @@ namespace Assets.Scripts.Canvas
 
     private void SetConnectionInfo(Node node)
     {
-      if (_tcpListenerService.NodeHasListener(node))
+      Ip.text = _mqttService.IP;
+      Id.text = $"ID: {node.Id}";
+
+      if (_mqttService.IsNodeIsConnected(node))
       {
-        _tcpListenerNode = _tcpListenerService.FindListener(node);
-        Ip.text = $"{_tcpListenerNode.Ip}:{_tcpListenerNode.Port}";
         ConnectButtonText.text = "Disconnect";
         _connectButtonAction = Disconnect;
       }
       else
       {
-        Ip.text = "";
         ConnectButtonText.text = "Connect to device";
         _connectButtonAction = Connect;
       }
     }
 
-    public void ChangeParametersButtonOnClick()
-    {
-      FindObjectOfType<PropertiesMenuHandler>().OpenPropertiesMenu(_node, contextMenu);
-    }
-
+    public void ChangeParametersButtonOnClick() => FindObjectOfType<PropertiesMenuHandler>().OpenPropertiesMenu(_node, contextMenu);
     public void ConnectButtonOnClick() => _connectButtonAction();
 
-    private void Connect() => _tcpListenerService.StartListener(_node);
+    private void Connect() => _mqttService.Subscribe(_node);
 
-    private void Disconnect() => _tcpListenerService.StopListener(_node);
+    private void Disconnect() => _mqttService.Unsubscribe(_node);
 
     public void DeleteButtonOnClick()
     {

@@ -13,7 +13,7 @@ namespace Assets.Scripts
 {
   public class MqttService : MonoBehaviour
   {
-    private readonly string ip = GetLocalIPv4();
+    public readonly string IP = GetLocalIPv4();
     private readonly List<Node> nodes = new List<Node>();
     private static readonly MqttFactory mqttFactory = new MqttFactory();
     private readonly IMqttClient mqttClient = mqttFactory.CreateMqttClient();
@@ -32,10 +32,11 @@ namespace Assets.Scripts
 
     public void Subscribe(Node node) => nodes.Add(node);
     public void Unsubscribe(Node node) => nodes.Remove(node);
-
+    public bool IsNodeIsConnected(Node node) => nodes.Contains(node);
+ 
     private async Task Connect()
     {
-      var mqttClientOptions = new MqttClientOptionsBuilder().WithTcpServer(ip).Build();
+      var mqttClientOptions = new MqttClientOptionsBuilder().WithTcpServer(IP).Build();
       var mqttSubscribeOptions = mqttFactory.CreateSubscribeOptionsBuilder()
                 .WithTopicFilter(f => f.WithTopic("node/#"))
                 .Build();
@@ -45,7 +46,7 @@ namespace Assets.Scripts
       {
         using (var timeoutToken = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
         {
-          Debug.Log($"Trying to connect to MQTT broker at {ip}");
+          Debug.Log($"Trying to connect to MQTT broker at {IP}");
           await mqttClient.ConnectAsync(mqttClientOptions, timeoutToken.Token);
           Debug.Log("MQTT client connected");
           Debug.Log("Trying to subscribe to all node topics");
@@ -65,7 +66,7 @@ namespace Assets.Scripts
       //TODO: consider reading as doubles
       var message = System.Text.Encoding.UTF8.GetString(messageBytes.Array, messageBytes.Offset, messageBytes.Count);
       var nodeIndex = int.Parse(args.ApplicationMessage.Topic.Substring(5));
-      var node = nodes.FirstOrDefault(node => node.Id == nodeIndex);
+      var node = nodes.FirstOrDefault(n => n.Id == nodeIndex);
       Debug.Log($"Node {nodeIndex}");
 
       if (node == null)
