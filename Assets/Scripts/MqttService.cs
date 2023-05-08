@@ -14,14 +14,26 @@ namespace Assets.Scripts
   public class MqttService : MonoBehaviour
   {
     public readonly string IP = GetLocalIPv4();
-    private readonly List<Node> nodes = new List<Node>();
+    private readonly List<Node> nodes = new List<Node>(); //TODO: dictionary might be faster
     private static readonly MqttFactory mqttFactory = new MqttFactory();
     private readonly IMqttClient mqttClient = mqttFactory.CreateMqttClient();
+    // Here we will add actions from the background thread
+    // that will be "delayed" until the next Update call => Unity main thread
+    private readonly Queue<Action> mainThreadActions = new Queue<Action>();
 
     public void Start()
     {
       // TODO: this can be done when the first node should be connected
       Connect().Wait(10);
+    }
+
+    public void FixedUpdate()
+    {
+      while (mainThreadActions.Count > 0)
+      {
+        var action = mainThreadActions.Dequeue();
+        action?.Invoke();
+      }
     }
 
     public void OnDestroy()
@@ -62,20 +74,31 @@ namespace Assets.Scripts
 
     private Task OnMessageReceived(MqttApplicationMessageReceivedEventArgs args)
     {
-      var messageBytes = args.ApplicationMessage.PayloadSegment;
-      //TODO: consider reading as doubles
-      var message = System.Text.Encoding.UTF8.GetString(messageBytes.Array, messageBytes.Offset, messageBytes.Count);
       var nodeIndex = int.Parse(args.ApplicationMessage.Topic.Substring(5));
       var node = nodes.FirstOrDefault(n => n.Id == nodeIndex);
-      Debug.Log($"Node {nodeIndex}");
 
       if (node == null)
       {
-        Debug.LogWarning($"Received message that cannot be processed from topic '{args.ApplicationMessage.Topic}', message: '{message}'");
+        Debug.LogWarning($"Received message that cannot be processed from topic '{args.ApplicationMessage.Topic}'");
+
+        return Task.CompletedTask;
       }
 
-      // TODO: on received: parse message and adjust nodes
-      Debug.Log(message);
+      var message = MqttMessageReader.ReadMessage(args.ApplicationMessage.PayloadSegment.Array);
+
+      var newRotation = AdjustAngularVelocity(message.gyroscope) * 0.02f;
+      var newVelocity = AdjustAcceleration(message.userAcceleration) * 0.02f;
+
+      mainThreadActions.Enqueue(() =>
+      {
+        node.Rotation += newRotation;
+        node.Velocity *= 0.9f;
+        node.Velocity += newVelocity;
+        var newPosition = node.Velocity * 0.02f;
+        node.Position += newPosition;
+      });
+ 
+      //TODO: magnetometer?
 
       return Task.CompletedTask;
     }
@@ -85,5 +108,24 @@ namespace Assets.Scripts
           .AddressList
           .First(f => f.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
           .ToString();
+
+    private Vector3 AdjustAcceleration(Vector3 acceleration)
+    {
+      var minSignificantThreshold = 0.015f;
+      var adjustedX = -acceleration.x;// - 0.021f;
+      var adjustedY = -acceleration.y;// + 0.0378f;
+      var adjustedZ = acceleration.z;// - 0.165f;
+
+      return new Vector3(
+        x: Math.Abs(adjustedX) < minSignificantThreshold ? 0 : adjustedX,
+        y: Math.Abs(adjustedY) < minSignificantThreshold ? 0 : adjustedY,
+        z: Math.Abs(adjustedZ) < minSignificantThreshold ? 0 : adjustedZ);//* 0.02f;
+    }
+
+    private Vector3 AdjustAngularVelocity(Vector3 angularVelocity) 
+      => new Vector3(
+        x: -angularVelocity.x,
+        y: -angularVelocity.y,
+        z: angularVelocity.z) * 57.3f;
   }
 }
