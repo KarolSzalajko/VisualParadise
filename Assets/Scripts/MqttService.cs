@@ -8,13 +8,16 @@ using MQTTnet.Client;
 using System.Threading.Tasks;
 using System.Threading;
 using System;
+using System.IO;
+using Assets.Scripts.Common;
+using Assets.Scripts.Common.Extensions;
 
 namespace Assets.Scripts
 {
   public class MqttService : MonoBehaviour
   {
     public readonly string IP = GetLocalIPv4();
-    private readonly List<Node> nodes = new List<Node>(); //TODO: dictionary might be faster
+    private readonly Dictionary<int, NodeData> nodes = new Dictionary<int, NodeData>();
     private static readonly MqttFactory mqttFactory = new MqttFactory();
     private readonly IMqttClient mqttClient = mqttFactory.CreateMqttClient();
     // Here we will add actions from the background thread
@@ -38,13 +41,28 @@ namespace Assets.Scripts
 
     public void OnDestroy()
     {
+      foreach(var kvp in nodes)
+      {
+        Unsubscribe(kvp.Value.Id);
+      }
+
       mqttClient.DisconnectAsync(new MqttClientDisconnectOptionsBuilder().WithReason(MqttClientDisconnectOptionsReason.NormalDisconnection).Build()).Wait();
       mqttClient.Dispose();
     }
 
-    public void Subscribe(Node node) => nodes.Add(node);
-    public void Unsubscribe(Node node) => nodes.Remove(node);
-    public bool IsNodeIsConnected(Node node) => nodes.Contains(node);
+    public void Subscribe(Node node)
+    {
+      var nodeData = new NodeData(node);
+      nodes[node.Id] = nodeData;
+    }
+
+    public void Unsubscribe(int nodeId)
+    {
+      nodes[nodeId].Dispose();
+      nodes.Remove(nodeId);
+    }
+    public void Unsubscribe(Node node) => Unsubscribe(node.Id);
+    public bool IsNodeIsConnected(Node node) => nodes.ContainsKey(node.Id);
  
     private async Task Connect()
     {
@@ -75,28 +93,31 @@ namespace Assets.Scripts
     private Task OnMessageReceived(MqttApplicationMessageReceivedEventArgs args)
     {
       var nodeIndex = int.Parse(args.ApplicationMessage.Topic.Substring(5));
-      var node = nodes.FirstOrDefault(n => n.Id == nodeIndex);
 
-      if (node == null)
+      if (nodes.ContainsKey(nodeIndex) == false)
       {
         Debug.LogWarning($"Received message that cannot be processed from topic '{args.ApplicationMessage.Topic}'");
 
         return Task.CompletedTask;
       }
 
+      var nodeData = nodes[nodeIndex];
       var message = MqttMessageReader.ReadMessage(args.ApplicationMessage.PayloadSegment.Array);
 
-      var newRotation = AdjustAngularVelocity(message.gyroscope) * 0.02f;
-      var newVelocity = AdjustAcceleration(message.userAcceleration) * 0.02f;
+      //var newRotation = AdjustAngularVelocity(message.gyroscope) * 0.02f;
+      //var newVelocity = AdjustAcceleration(message.userAcceleration) * 0.02f;
 
-      mainThreadActions.Enqueue(() =>
-      {
-        node.Rotation += newRotation;
-        node.Velocity *= 0.9f;
-        node.Velocity += newVelocity;
-        var newPosition = node.Velocity * 0.02f;
-        node.Position += newPosition;
-      });
+      //TODO: add some sort of a service that looks at the NodeData history and processes it and creates action
+      //mainThreadActions.Enqueue(() =>
+      //{
+      //  node.Rotation += newRotation;
+      //  node.Velocity *= 0.9f;
+      //  node.Velocity += newVelocity;
+      //  var newPosition = node.Velocity * 0.02f;
+      //  node.Position += newPosition;
+      //});
+
+      nodeData.AddMessage(message);
  
       //TODO: magnetometer?
 
@@ -127,5 +148,32 @@ namespace Assets.Scripts
         x: -angularVelocity.x,
         y: -angularVelocity.y,
         z: angularVelocity.z) * 57.3f;
+  }
+
+  class NodeData : IDisposable
+  {
+    Node _node;
+
+    FixedSizedQueue<MqttMessage> _history;
+
+    StreamWriter _streamWriter;
+
+    public NodeData(Node node)
+    {
+      _node = node;
+      _history = new FixedSizedQueue<MqttMessage>(50);
+      var filePath = $"node/{Id}_{DateTime.Now:yyyy-MM-dd HH-mm-ss}.csv";
+      _streamWriter = File.CreateText(filePath);
+      _streamWriter.WriteLine($"accX; accY; accZ; uaX; uaY; uaZ; gX; gY; gZ; mX; mY; mZ");
+    }
+    public int Id => _node.Id;
+
+    public void Dispose() => _streamWriter.Dispose();
+
+    public void AddMessage(MqttMessage message)
+    {
+      _history.Enqueue(message);
+      _streamWriter.WriteLine($"{message.acceleration.ToCsvRow()}; {message.userAcceleration.ToCsvRow()}; {message.gyroscope.ToCsvRow()}; {message.magnetometer.ToCsvRow()}");
+    }
   }
 }
