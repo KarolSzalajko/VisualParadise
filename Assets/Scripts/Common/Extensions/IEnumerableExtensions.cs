@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Assets.Scripts.Common.Extensions
@@ -11,6 +12,11 @@ namespace Assets.Scripts.Common.Extensions
     {
       var list = enumerable.ToList();
       return list.Take(list.Count - count);
+    }
+
+    public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, int N)
+    {
+      return source.Skip(Math.Max(0, source.Count() - N));
     }
   }
 }

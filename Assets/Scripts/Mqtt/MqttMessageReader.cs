@@ -1,11 +1,11 @@
 ﻿using System;
 using UnityEngine;
 
-namespace Assets.Scripts
+namespace Assets.Scripts.Mqtt
 {
   static class MqttMessageReader
   {
-    //The message has a char poutix that indicates IBU measurement and x, y, z values.
+    //The message has a char prefix that indicates IBU measurement and x, y, z values.
     public static MqttMessage ReadMessage(byte[] message)
     {
       var processedMessage = new MqttMessage();
@@ -32,19 +32,5 @@ namespace Assets.Scripts
 
       return processedMessage;
     }
-  }
-
-  class MqttMessage
-  {
-    public Vector3 acceleration { get; set; } = Vector3.zero;
-    public Vector3 userAcceleration { get; set; } = Vector3.zero;
-    public Vector3 gyroscope { get; set; } = Vector3.zero;
-    public Vector3 magnetometer { get; set; } = Vector3.zero;
-  }
-
-  static class ArraySegmentExtensions
-  {
-    public static ArraySegment<T> PushOffset<T>(this ArraySegment<T> segment, int additionalOffset)
-      => new ArraySegment<T>(segment.Array, segment.Offset + additionalOffset, segment.Count);
   }
 }

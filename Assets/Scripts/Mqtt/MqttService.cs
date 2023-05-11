@@ -8,14 +8,12 @@ using MQTTnet.Client;
 using System.Threading.Tasks;
 using System.Threading;
 using System;
-using System.IO;
-using Assets.Scripts.Common;
-using Assets.Scripts.Common.Extensions;
 
-namespace Assets.Scripts
+namespace Assets.Scripts.Mqtt
 {
   public class MqttService : MonoBehaviour
   {
+    private readonly Func<NodeData, MqttMessage> method = MessageProcessor.SimpleMovingAverage;
     public readonly string IP = GetLocalIPv4();
     private readonly Dictionary<int, NodeData> nodes = new Dictionary<int, NodeData>();
     private static readonly MqttFactory mqttFactory = new MqttFactory();
@@ -43,7 +41,7 @@ namespace Assets.Scripts
     {
       foreach(var kvp in nodes)
       {
-        Unsubscribe(kvp.Value.Id);
+        Unsubscribe(kvp.Value.node.Id);
       }
 
       mqttClient.DisconnectAsync(new MqttClientDisconnectOptionsBuilder().WithReason(MqttClientDisconnectOptionsReason.NormalDisconnection).Build()).Wait();
@@ -103,25 +101,30 @@ namespace Assets.Scripts
 
       var nodeData = nodes[nodeIndex];
       var message = MqttMessageReader.ReadMessage(args.ApplicationMessage.PayloadSegment.Array);
+      var transformedMessage = MessageProcessor.Transform(message);
+      nodeData.AddRawMessage(transformedMessage); //Include in thesis that we are adjusting so this is initially transformed data
 
-      //var newRotation = AdjustAngularVelocity(message.gyroscope) * 0.02f;
-      //var newVelocity = AdjustAcceleration(message.userAcceleration) * 0.02f;
+      var processedMessage = method(nodeData);
+      nodeData.AddProcessedMessage(processedMessage);
 
-      //TODO: add some sort of a service that looks at the NodeData history and processes it and creates action
-      //mainThreadActions.Enqueue(() =>
-      //{
-      //  node.Rotation += newRotation;
-      //  node.Velocity *= 0.9f;
-      //  node.Velocity += newVelocity;
-      //  var newPosition = node.Velocity * 0.02f;
-      //  node.Position += newPosition;
-      //});
-
-      nodeData.AddMessage(message);
- 
-      //TODO: magnetometer?
+      AddForExecution(nodeData.node, processedMessage);
 
       return Task.CompletedTask;
+    }
+
+    private void AddForExecution(Node node,MqttMessage message)
+    {
+      var newRotation = message.gyroscope * 0.02f;
+      var newVelocity = message.acceleration * 0.02f;
+
+      mainThreadActions.Enqueue(() =>
+      {
+        node.Rotation += newRotation;
+        node.Velocity *= 0.9f;
+        node.Velocity += newVelocity;
+        var newPosition = node.Velocity * 0.02f;
+        node.Position += newPosition;
+      });
     }
 
     private static string GetLocalIPv4()
@@ -129,51 +132,5 @@ namespace Assets.Scripts
           .AddressList
           .First(f => f.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
           .ToString();
-
-    private Vector3 AdjustAcceleration(Vector3 acceleration)
-    {
-      var minSignificantThreshold = 0.015f;
-      var adjustedX = -acceleration.x;// - 0.021f;
-      var adjustedY = -acceleration.y;// + 0.0378f;
-      var adjustedZ = acceleration.z;// - 0.165f;
-
-      return new Vector3(
-        x: Math.Abs(adjustedX) < minSignificantThreshold ? 0 : adjustedX,
-        y: Math.Abs(adjustedY) < minSignificantThreshold ? 0 : adjustedY,
-        z: Math.Abs(adjustedZ) < minSignificantThreshold ? 0 : adjustedZ);//* 0.02f;
-    }
-
-    private Vector3 AdjustAngularVelocity(Vector3 angularVelocity) 
-      => new Vector3(
-        x: -angularVelocity.x,
-        y: -angularVelocity.y,
-        z: angularVelocity.z) * 57.3f;
-  }
-
-  class NodeData : IDisposable
-  {
-    Node _node;
-
-    FixedSizedQueue<MqttMessage> _history;
-
-    StreamWriter _streamWriter;
-
-    public NodeData(Node node)
-    {
-      _node = node;
-      _history = new FixedSizedQueue<MqttMessage>(50);
-      var filePath = $"node/{Id}_{DateTime.Now:yyyy-MM-dd HH-mm-ss}.csv";
-      _streamWriter = File.CreateText(filePath);
-      _streamWriter.WriteLine($"accX; accY; accZ; uaX; uaY; uaZ; gX; gY; gZ; mX; mY; mZ");
-    }
-    public int Id => _node.Id;
-
-    public void Dispose() => _streamWriter.Dispose();
-
-    public void AddMessage(MqttMessage message)
-    {
-      _history.Enqueue(message);
-      _streamWriter.WriteLine($"{message.acceleration.ToCsvRow()}; {message.userAcceleration.ToCsvRow()}; {message.gyroscope.ToCsvRow()}; {message.magnetometer.ToCsvRow()}");
-    }
   }
 }

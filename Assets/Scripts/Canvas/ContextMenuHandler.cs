@@ -1,5 +1,6 @@
 ﻿using System;
 using Assets.Scripts.Model;
+using Assets.Scripts.Mqtt;
 using UnityEngine;
 using UnityEngine.UI;
 
