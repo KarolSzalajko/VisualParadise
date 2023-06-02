@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Linq;
-using Assets.Scripts.Common.Extensions;
 using UnityEngine;
 
 namespace Assets.Scripts.Mqtt
@@ -11,64 +9,8 @@ namespace Assets.Scripts.Mqtt
     {
       return new MqttMessage
       {
-        acceleration = message.acceleration, //TODO
         userAcceleration = AdjustAcceleration(message.userAcceleration),
-        gyroscope = AdjustAngularVelocity(message.gyroscope),
-        magnetometer = message.magnetometer //TODO
-      };
-    }
-
-    public static MqttMessage SimpleMovingAverage(NodeData nodeData)
-    {
-      const int count = 5;
-      var elements = nodeData.rawMessages.TakeLast(count);
-
-      // TODO: consider dropping accelerometer support
-      var acc = Vector3.zero;
-      var userAcc = Vector3.zero;
-      var gyro = Vector3.zero;
-      var mag = Vector3.zero;
-
-      if(elements.Count() == count)
-      {
-        foreach (var elem in elements)
-        {
-          acc += elem.acceleration;
-          userAcc += elem.userAcceleration;
-          gyro += elem.gyroscope;
-          mag += elem.magnetometer;
-        }
-      }
-
-      return new MqttMessage
-      {
-        acceleration = acc / count,
-        userAcceleration = userAcc / count,
-        gyroscope = gyro / count,
-        magnetometer = mag / count,
-      };
-    }
-
-    public static MqttMessage ExponentialMovingAverage(NodeData nodeData)
-    {
-      const int count = 5;
-      const float alpha = 2 / ((float)count + 1);
-
-      if (nodeData.rawMessages.Count() < count + 1)
-      {
-        return SimpleMovingAverage(nodeData);
-      }
-
-      var last= nodeData.processedMessages.Last();
-      var penultimateRaw= nodeData.rawMessages.TakeLast(2).First();
-      var lastRaw= nodeData.rawMessages.Last();
-
-      return new MqttMessage
-      {
-        acceleration = last.acceleration + alpha * (lastRaw.acceleration - penultimateRaw.acceleration),
-        userAcceleration = last.userAcceleration + alpha * (lastRaw.userAcceleration - penultimateRaw.userAcceleration),
-        gyroscope = last.gyroscope + alpha * (lastRaw.gyroscope - penultimateRaw.gyroscope),
-        magnetometer = last.magnetometer + alpha * (lastRaw.magnetometer - penultimateRaw.magnetometer),
+        gyroscope = AdjustAngularVelocity(message.gyroscope)
       };
     }
 

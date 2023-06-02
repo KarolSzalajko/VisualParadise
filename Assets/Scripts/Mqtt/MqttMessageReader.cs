@@ -19,14 +19,10 @@ namespace Assets.Scripts.Mqtt
 
         switch (indicator)
         {
-          case 'a':
-            processedMessage.acceleration = vector; break;
           case 'u':
             processedMessage.userAcceleration = vector; break;
           case 'g':
             processedMessage.gyroscope = vector; break;
-          case 'm':
-            processedMessage.magnetometer = vector; break;
         }
       }
 

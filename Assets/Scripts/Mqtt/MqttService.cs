@@ -13,18 +13,15 @@ namespace Assets.Scripts.Mqtt
 {
   public class MqttService : MonoBehaviour
   {
-    private readonly Func<NodeData, MqttMessage> method = MessageProcessor.SimpleMovingAverage;
     public readonly string IP = GetLocalIPv4();
     private readonly Dictionary<int, NodeData> nodes = new Dictionary<int, NodeData>();
     private static readonly MqttFactory mqttFactory = new MqttFactory();
     private readonly IMqttClient mqttClient = mqttFactory.CreateMqttClient();
-    // Here we will add actions from the background thread
-    // that will be "delayed" until the next Update call => Unity main thread
+    // Here we will add actions from the background thread that will be "delayed" until the next Update call => Unity main thread
     private readonly Queue<Action> mainThreadActions = new Queue<Action>();
 
     public void Start()
     {
-      // TODO: this can be done when the first node should be connected
       Connect().Wait(10);
     }
 
@@ -102,12 +99,9 @@ namespace Assets.Scripts.Mqtt
       var nodeData = nodes[nodeIndex];
       var message = MqttMessageReader.ReadMessage(args.ApplicationMessage.PayloadSegment.Array);
       var transformedMessage = MessageProcessor.Transform(message);
-      nodeData.AddRawMessage(transformedMessage); //Include in thesis that we are adjusting so this is initially transformed data
+      nodeData.AddMessage(transformedMessage); //We can get not transformed data easily from the phone output
 
-      var processedMessage = method(nodeData);
-      nodeData.AddProcessedMessage(processedMessage);
-
-      AddForExecution(nodeData.node, processedMessage);
+      AddForExecution(nodeData.node, transformedMessage);
 
       return Task.CompletedTask;
     }
@@ -115,7 +109,7 @@ namespace Assets.Scripts.Mqtt
     private void AddForExecution(Node node,MqttMessage message)
     {
       var newRotation = message.gyroscope * 0.02f;
-      var newVelocity = message.acceleration * 0.02f;
+      var newVelocity = message.userAcceleration * 0.02f;
 
       mainThreadActions.Enqueue(() =>
       {
