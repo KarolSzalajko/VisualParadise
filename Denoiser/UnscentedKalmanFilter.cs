@@ -129,7 +129,7 @@ namespace Denoiser
             c = Math.Sqrt(c);
         }
 
-        public void Update(double[] measurements)
+        public void Update(params double[] measurements)
         {
             if (m == 0)
             {

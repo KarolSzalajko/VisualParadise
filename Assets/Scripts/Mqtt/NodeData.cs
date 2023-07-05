@@ -1,35 +1,44 @@
 ﻿using System;
 using System.IO;
-using Assets.Scripts.Common;
 using Assets.Scripts.Common.Extensions;
 using Assets.Scripts.Model;
+using Assets.Scripts.Mqtt.Deniose;
 
 namespace Assets.Scripts.Mqtt
 {
   class NodeData : IDisposable
   {
-    public Node node;
-    public FixedSizedQueue<MqttMessage> messages;
-    StreamWriter _streamWriter;
+    //C:\Users\User\Desktop\Ja\PeWueR\praca magisterska\visual paradise
 
-    public NodeData(Node node)
+    public Node node;
+    StreamWriter _rawStreamWriter;
+    StreamWriter _deniosedStreamWriter;
+    IDenoiseMethod _denoiseMethod;
+
+    public NodeData(Node node, IDenoiseMethod denoiseMethod)
     {
       this.node = node;
-      messages = new FixedSizedQueue<MqttMessage>(50);
+      _denoiseMethod = denoiseMethod;
       var rawFilePath = $"node/{node.Id}_raw_{DateTime.Now:yyyy-MM-dd HH-mm-ss}.csv";
-      _streamWriter = File.CreateText(rawFilePath);
-      _streamWriter.WriteLine($"uaX; uaY; uaZ; gX; gY; gZ");
+      var denoisedFilePath = $"node/{node.Id}_{DateTime.Now:yyyy-MM-dd HH-mm-ss}.csv";
+      _rawStreamWriter = File.CreateText(rawFilePath);
+      _rawStreamWriter.WriteLine($"uaX; uaY; uaZ; gX; gY; gZ");
+      _deniosedStreamWriter = File.CreateText(denoisedFilePath);
+      _deniosedStreamWriter.WriteLine($"uaX; uaY; uaZ; gX; gY; gZ");
     }
 
     public void Dispose()
     {
-      _streamWriter.Dispose();
+      _rawStreamWriter.Dispose();
+      _deniosedStreamWriter.Dispose();
     }
 
     public void AddMessage(MqttMessage message)
     {
-      messages.Enqueue(message);
-      _streamWriter.WriteLine($"{message.userAcceleration.ToCsvRow()}; {message.gyroscope.ToCsvRow()}");
+      _rawStreamWriter.WriteLine($"{message.userAcceleration.ToCsvRow()}; {message.gyroscope.ToCsvRow()}");
+      var deniosedMessage = _denoiseMethod.Deniose(message);
+      _deniosedStreamWriter.WriteLine($"{deniosedMessage.userAcceleration.ToCsvRow()}; {deniosedMessage.gyroscope.ToCsvRow()}");
+
     }
   }
 }
