@@ -38,7 +38,6 @@ namespace Assets.Scripts.Mqtt
       _rawStreamWriter.WriteLine($"{message.userAcceleration.ToCsvRow()}; {message.gyroscope.ToCsvRow()}");
       var deniosedMessage = _denoiseMethod.Deniose(message);
       _deniosedStreamWriter.WriteLine($"{deniosedMessage.userAcceleration.ToCsvRow()}; {deniosedMessage.gyroscope.ToCsvRow()}");
-
     }
   }
 }
