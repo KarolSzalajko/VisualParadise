@@ -266,6 +266,9 @@
     <Reference Include="Newtonsoft.Json">
       <HintPath>C:/Users/User/Desktop/Ja/PeWueR/praca magisterska/visual paradise/VisualParadise/Assets/JsonDotNet/Assemblies/Standalone/Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="Denoiser">
+      <HintPath>C:/Users/User/Desktop/Ja/PeWueR/praca magisterska/visual paradise/VisualParadise/Assets/Plugins/Denoiser.dll</HintPath>
+    </Reference>
     <Reference Include="MQTTnet">
       <HintPath>C:/Users/User/Desktop/Ja/PeWueR/praca magisterska/visual paradise/VisualParadise/Assets/Plugins/MQTTnet.dll</HintPath>
     </Reference>

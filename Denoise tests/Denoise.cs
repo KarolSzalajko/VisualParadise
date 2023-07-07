@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -24,7 +25,7 @@ namespace Denoise_tests
         var values = GetValues(file, columnNumToCheck);
         metrics.Add(CalculateMetrics(values, expectedValues)); 
       }
-      AverageMetrics();
+      var avgMetrics = AverageMetrics(metrics);
     }
 
     [TestMethod]
@@ -43,7 +44,7 @@ namespace Denoise_tests
           .ToList();
         metrics.Add(CalculateMetrics(denoised, expectedValues));
       }
-      AverageMetrics();
+      var avgMetrics = AverageMetrics(metrics);
     }
 
     private List<float> GetValues(string fileName, int columnNumToCheck)
@@ -63,6 +64,43 @@ namespace Denoise_tests
       return values;
     }
 
+    private Metrics AverageMetrics(List<Metrics> metrics)
+    {
+      return new Metrics
+      {
+        RMSE = metrics.Select(m => m.RMSE).Average()
+      };
+    }
+
+    private static Metrics CalculateMetrics(List<float> denoised, List<float> expected)
+    {
+      return new Metrics
+      {
+        RMSE = CalculateRMSE(denoised, expected)
+      };
+    }
+
+    private static double CalculateRMSE(List<float> denoised, List<float> expected)
+    {
+      if (expected.Count != denoised.Count)
+      {
+        throw new ArgumentException("The lengths of predictedValues and actualValues must be the same.");
+      }
+
+      int n = expected.Count;
+      double sumSquaredErrors = 0.0;
+
+      for (int i = 0; i < n; i++)
+      {
+        double error = expected[i] - denoised[i];
+        sumSquaredErrors += Math.Pow(error, 2);
+      }
+
+      double meanSquaredError = sumSquaredErrors / n;
+      double rmse = Math.Sqrt(meanSquaredError);
+
+      return rmse;
+    }
 
     private static List<float> ExpectedSationary(int size) => Enumerable.Range(0, size).Select(x => 0F).ToList();
   }
