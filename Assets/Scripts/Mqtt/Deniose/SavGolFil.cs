@@ -1,6 +1,4 @@
-﻿using Denoiser;
-
-namespace Assets.Scripts.Mqtt.Deniose
+﻿namespace Assets.Scripts.Mqtt.Deniose
 {
   class SavGolFil : IDenoiseMethod
   {

@@ -8,7 +8,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <RootNamespace></RootNamespace>
+    <RootNamespace>
+    </RootNamespace>
     <ProjectGuid>{2EE72491-422C-F0C0-4113-D6E3B5319C3D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
@@ -110,7 +111,9 @@
     <Compile Include="Assets\Scripts\Mqtt\Deniose\IDenoiseMethod.cs" />
     <Compile Include="Assets\Scripts\Mqtt\Deniose\KalFil.cs" />
     <Compile Include="Assets\Scripts\Mqtt\Deniose\MovingAverage.cs" />
+    <Compile Include="Assets\Scripts\Mqtt\Deniose\SGF.cs" />
     <Compile Include="Assets\Scripts\Mqtt\Deniose\SavGolFil.cs" />
+    <Compile Include="Assets\Scripts\Mqtt\Deniose\UnscentedKalmanFilter.cs" />
     <Compile Include="Assets\Scripts\Mqtt\MessageProcessor.cs" />
     <Compile Include="Assets\Scripts\Mqtt\MqttMessage.cs" />
     <Compile Include="Assets\Scripts\Mqtt\MqttMessageReader.cs" />
@@ -324,11 +327,11 @@
     <Reference Include="Newtonsoft.Json">
       <HintPath>C:/Users/User/Desktop/Ja/PeWueR/praca magisterska/visual paradise/VisualParadise/Assets/JsonDotNet/Assemblies/Standalone/Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="Denoiser">
-      <HintPath>C:/Users/User/Desktop/Ja/PeWueR/praca magisterska/visual paradise/VisualParadise/Assets/Plugins/Denoiser.dll</HintPath>
-    </Reference>
     <Reference Include="MQTTnet">
       <HintPath>C:/Users/User/Desktop/Ja/PeWueR/praca magisterska/visual paradise/VisualParadise/Assets/Plugins/MQTTnet.dll</HintPath>
+    </Reference>
+    <Reference Include="MathNet.Numerics">
+      <HintPath>C:/Users/User/Desktop/Ja/PeWueR/praca magisterska/visual paradise/VisualParadise/Assets/Plugins/MathNet.Numerics.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib">
       <HintPath>C:/Program Files/Unity/Hub/Editor/2019.3.13f1/Editor/Data/MonoBleedingEdge/lib/mono/4.7.1-api/mscorlib.dll</HintPath>
@@ -727,7 +730,8 @@
       <HintPath>C:/Users/User/Desktop/Ja/PeWueR/praca magisterska/visual paradise/VisualParadise/Library/ScriptAssemblies/UnityEditor.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
-  <ItemGroup></ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="GenerateTargetFrameworkMonikerAttribute" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

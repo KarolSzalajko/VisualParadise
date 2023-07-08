@@ -13,7 +13,8 @@ namespace Denoise_tests
     // uaX; uaY; uaZ; gX; gY; gZ
     const int columnNumToCheck = 0;
     const string folder = "";
-    static List<float> expectedValues = ExpectedSationary(200);
+    static List<float> ExpectedValues(int size) => ExpectedSationary(size);
+
 
     [TestMethod]
     public void RunMetricsOnRawData()
@@ -23,7 +24,7 @@ namespace Denoise_tests
       foreach (var file in filesInFolder)
       {
         var values = GetValues(file, columnNumToCheck);
-        metrics.Add(CalculateMetrics(values, expectedValues)); 
+        metrics.Add(CalculateMetrics(values, ExpectedValues(values.Count))); 
       }
       var avgMetrics = AverageMetrics(metrics);
     }
@@ -42,7 +43,7 @@ namespace Denoise_tests
         var denoised = values
           .Select(MA.Deniose)
           .ToList();
-        metrics.Add(CalculateMetrics(denoised, expectedValues));
+        metrics.Add(CalculateMetrics(denoised, ExpectedValues(denoised.Count)));
       }
       var avgMetrics = AverageMetrics(metrics);
     }
@@ -103,5 +104,21 @@ namespace Denoise_tests
     }
 
     private static List<float> ExpectedSationary(int size) => Enumerable.Range(0, size).Select(x => 0F).ToList();
+
+    private static List<float> ExpectedDrop(int size) => Enumerable.Range(0, size).Select(x => 9.8F).ToList(); // TODO: Verify
+
+    private static List<float> ExpectedSin(int size)
+    {
+      List<float> values = new List<float>(size);
+      double step = 2 * Math.PI / size;
+
+      for (int i = 0; i < size; i++)
+      {
+        double angle = i * step;
+        values[i] = (float)Math.Sin(angle);
+      }
+
+      return values;
+    }
   }
 }

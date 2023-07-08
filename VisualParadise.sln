@@ -1,8 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31205.134
-MinimumVisualStudioVersion = 10.0.40219.1
+# Visual Studio 15
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{2EE72491-422C-F0C0-4113-D6E3B5319C3D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor-firstpass", "Assembly-CSharp-Editor-firstpass.csproj", "{0B04C46E-00BD-B516-68A8-3EB41D2358C8}"
@@ -10,6 +8,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "Assembly-CSharp-Editor.csproj", "{F8D7A08C-EA59-9066-F612-14A5BC74984F}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Denoise tests", "Denoise tests\Denoise tests.csproj", "{C921FD2E-7880-4946-8972-BE3135F38496}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Denoiser", "Denoiser\Denoiser.csproj", "{E51D4973-3B47-4A8F-AF4A-A64AF5216F0D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,11 +33,12 @@ Global
 		{C921FD2E-7880-4946-8972-BE3135F38496}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C921FD2E-7880-4946-8972-BE3135F38496}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C921FD2E-7880-4946-8972-BE3135F38496}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E51D4973-3B47-4A8F-AF4A-A64AF5216F0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E51D4973-3B47-4A8F-AF4A-A64AF5216F0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E51D4973-3B47-4A8F-AF4A-A64AF5216F0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E51D4973-3B47-4A8F-AF4A-A64AF5216F0D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {FD23C1C2-2104-42FA-912F-2DD2F9A51598}
 	EndGlobalSection
 EndGlobal
