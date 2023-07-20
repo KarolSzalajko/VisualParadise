@@ -1,8 +1,7 @@
 ﻿using System;
-using Assets.Scripts.Common;
 using MathNet.Numerics.LinearAlgebra;
 
-namespace Assets.Scripts.Mqtt.Deniose
+namespace Denoise_tests
 {
     public class SGF
     {

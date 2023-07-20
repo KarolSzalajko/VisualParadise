@@ -1,6 +1,4 @@
-﻿using Assets.Scripts.Common;
-
-namespace Denoise_tests
+﻿namespace Denoise_tests
 {
   class SimpleMovingAverage
   {

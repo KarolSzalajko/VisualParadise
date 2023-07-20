@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1" />
     <PackageReference Include="MSTest.TestAdapter" Version="2.1.1" />
     <PackageReference Include="MSTest.TestFramework" Version="2.1.1" />
@@ -15,7 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Assembly-CSharp.csproj" />
 	<Reference Include="Denoiser">
 	  <HintPath>C:/Users/User/Desktop/Ja/PeWueR/praca magisterska/visual paradise/VisualParadise/Assets/Plugins/Denoiser.dll</HintPath>
 	</Reference>
